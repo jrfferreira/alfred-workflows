@@ -5,38 +5,39 @@ import re, sys, json, os
 
 shuttle_config = os.path.expanduser("~")+"/.shuttle.json"
 
-host_name = ""
+host_query = "{query}"
 
-pattern = re.compile('^'+host_name, flags=re.IGNORECASE)
+pattern = re.compile(host_query, flags=re.IGNORECASE)
 
 found_flag = 0
 
-def listHosts(hosts):
-    # found_flag = found_flag
+def listHosts(hosts, current_host = None):
     for host in hosts:
         if (not host.has_key(u'cmd')):
-            listHosts(host[host.keys()[0]])
+            for key in host:
+                host_name = current_host + ' - ' + key if current_host else key
+                listHosts(host[key], host_name)
         else:
-            if pattern.match(host['name']):
+            host_name = current_host + ' - ' + host['name']
+            if pattern.search(host_name):
                 global found_flag
                 found_flag += 1
-                print "  <item uid=\""+host['name']+"\" arg=\""+host['cmd']+"\" >"
-                print "    <title>"+ host['name'] +"</title>"
+                print "  <item uid=\""+ host_name +"\" arg=\""+host['cmd']+"\" >"
+                print "    <title>"+ host_name  +"</title>"
                 print "    <subtitle>"+host['cmd']+"</subtitle>"
                 print "    <icon>icon.png</icon>"
                 print "  </item>"
     
 
 shuttle_file = file(shuttle_config)
-# print shuttle_file
 
 try:
     json_string = json.dumps(json.load(shuttle_file))
-    # print json_string
     host_list = json.loads(json_string)
-    # print host_list
+
     print "<?xml version=\"1.0\"?>\n<items>"
     listHosts(host_list['hosts'])
+
     if (found_flag == 0):
         print "  <item uid=\"Not Found\" arg=\"\" >"
         print "    <title>No Match!</title>"
@@ -44,6 +45,7 @@ try:
         print "    <icon>icon.png</icon>"
         print "  </item>"
     print "</items>"
+    
 except Exception,e:
     shuttle_file.close()
     print e
